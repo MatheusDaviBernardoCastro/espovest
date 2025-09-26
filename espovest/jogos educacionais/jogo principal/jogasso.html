@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jogos Educativos com a Tartaruga</title>
+  <style>
+    body { font-family: 'Baloo 2', Arial, sans-serif; background: linear-gradient(135deg, #6dd5fa, #2980b9); color: #222; min-height: 100vh; margin: 0; }
+    h1 { color: #fff; text-align: center; margin: 30px 0 10px 0; }
+    .character-speech { display: flex; align-items: center; gap: 20px; max-width: 700px; margin: 0 auto 30px auto; }
+    .turtle-img { width: 110px; border-radius: 18px; filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3)); }
+    .speech-bubble { background: #1abc9c; color: white; font-weight: 700; font-size: 1.2rem; padding: 22px 30px; border-radius: 25px; position: relative; box-shadow: 0 8px 25px rgba(0,0,0,0.3); line-height: 1.4; max-width: 400px; min-width: 180px; user-select: none;}
+    .speech-bubble::before { content: ''; position: absolute; left: -24px; top: 50%; transform: translateY(-50%); border: 16px solid transparent; border-right-color: #1abc9c; }
+    .menu, .game, .ranking { max-width: 700px; width: 95vw; background: white; border-radius: 25px; box-shadow: 0 12px 30px rgba(0,0,0,0.3); padding: 36px 30px 40px 30px; margin: 0 auto 30px auto; text-align: center; position: relative; }
+    .hidden { display: none; }
+    .btn, button { background: #1abc9c; border: none; color: white; font-weight: 700; font-size: 1.1rem; padding: 12px 34px; border-radius: 30px; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.15); margin: 5px 0; transition: background 0.2s; }
+    .btn:hover, button:hover, .btn:focus, button:focus { background: #16a085; outline: none; }
+    .btn-back { background: #e74c3c; color: white; border: none; padding: 7px 18px; font-size: 1rem; border-radius: 20px; cursor: pointer; position: absolute; left: 20px; top: 20px; }
+    .btn-back:hover, .btn-back:focus { background: #c0392b; }
+    input[type=text], input[type=number] { font-size: 1.2rem; padding: 10px 12px; border-radius: 10px; border: 2px solid #2980b9; margin-bottom: 8px; width: 200px; text-align: center; }
+    .feedback { margin-top: 18px; font-weight: 700; font-size: 1.1rem; min-height: 36px; color: #2980b9; }
+    .alpha-word { font-size: 1.5rem; font-weight: 700; margin: 18px 0; color: #2980b9; }
+    .alphabet-letters { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 18px; }
+    .alphabet-letter { background: #3498db; color: white; font-weight: 700; font-size: 1.3rem; width: 54px; height: 54px; border-radius: 12px; border: none; cursor: pointer; transition: background 0.2s; }
+    .alphabet-letter:hover, .alphabet-letter:focus { background: #1abc9c; }
+    .math-question { font-size: 1.3rem; font-weight: 700; margin-bottom: 16px; color: #2980b9; }
+    .ranking table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.12); margin-bottom: 18px; }
+    .ranking th, .ranking td { padding: 10px 16px; border-bottom: 1px solid #ddd; font-size: 1rem; text-align: center; }
+    .ranking tbody tr:last-child td { border-bottom: none; }
+    .rank-message { font-size: 1.1rem; font-weight: 700; color: #34495e; min-height: 32px; }
+    @media (max-width: 600px) { .character-speech { flex-direction: column; gap: 10px; } .speech-bubble { max-width: 95vw; font-size: 1rem; padding: 14px 14px; } .menu, .game, .ranking { padding: 18px 4px 24px 4px; } .alpha-word, .math-question { font-size: 1.1rem; } .alphabet-letter { width: 38px; height: 38px; font-size: 1rem; } }
+  </style>
+</head>
+<body>
+
+<h1>🎲 Jogos Educativos com a Tartaruga Denis Rezende</h1>
+
+<div class="character-speech">
+  <img src="ChatGPT Image 18 de jun. de 2025, 21_53_18.png" alt="Tartaruga estilosa" class="turtle-img" />
+  <div class="speech-bubble" id="turtleMessage">
+    Bem-vindo! Escolha um jogo para começar a aprender e se divertir!
+  </div>
+</div>
+
+<div class="menu" id="menu">
+  <div>
+    <input id="playerName" type="text" placeholder="Seu nome" maxlength="16" />
+    <input id="playerEmote" type="text" placeholder="Seu emote favorito" maxlength="2" />
+  </div>
+  <button class="btn" id="btnAlphabet">Jogo de Alfabetização</button>
+  <button class="btn" id="btnMath">Jogo de Matemática</button>
+  <button class="btn" id="btnRanking">Ver Ranking</button>
+</div>
+
+<section id="gameAlphabet" class="game hidden">
+  <button class="btn-back" id="backFromAlphabet">← Voltar</button>
+  <h2>Jogo de Alfabetização</h2>
+  <div class="alpha-word" id="alphabetWord"></div>
+  <div class="alphabet-letters" id="alphabetGameArea"></div>
+  <div class="feedback" id="alphabetFeedback"></div>
+  <div>Pontuação: <span id="alphabetScore">0</span></div>
+</section>
+
+<section id="gameMath" class="game hidden">
+  <button class="btn-back" id="backFromMath">← Voltar</button>
+  <h2>Jogo de Matemática</h2>
+  <div class="math-question" id="mathQuestion"></div>
+  <input type="number" id="mathAnswer" />
+  <button class="btn" id="checkMath">Verificar</button>
+  <div class="feedback" id="mathFeedback"></div>
+  <div>Pontuação: <span id="mathScore">0</span></div>
+</section>
+
+<section id="scoreboardSection" class="ranking hidden">
+  <h2>🏆 Ranking de Jogadores</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Emote</th>
+        <th>Nome</th>
+        <th>Pontuação Português</th>
+        <th>Pontuação Matemática</th>
+        <th>Rank</th>
+      </tr>
+    </thead>
+    <tbody id="scoreboardBody"></tbody>
+  </table>
+  <p class="rank-message" id="rankMessage"></p>
+  <button class="btn" id="backFromRanking">← Voltar</button>
+</section>
+
+<script>
+const alphabetWords = [
+  { letter: "A", word: "Abelha" },{ letter: "B", word: "Bola" },{ letter: "C", word: "Casa" },{ letter: "D", word: "Dado" },
+  { letter: "E", word: "Elefante" },{ letter: "F", word: "Foca" },{ letter: "G", word: "Gato" },{ letter: "H", word: "Helicóptero" },
+  { letter: "I", word: "Igreja" },{ letter: "J", word: "Jacaré" },{ letter: "K", word: "Kiwi" },{ letter: "L", word: "Lápis" },
+  { letter: "M", word: "Macaco" },{ letter: "N", word: "Navio" },{ letter: "O", word: "Ovelha" },{ letter: "P", word: "Pato" },
+  { letter: "Q", word: "Queijo" },{ letter: "R", word: "Rato" },{ letter: "S", word: "Sapo" },{ letter: "T", word: "Tatu" },
+  { letter: "U", word: "Urso" },{ letter: "V", word: "Vaca" },{ letter: "W", word: "Waffle" },{ letter: "X", word: "Xícara" },
+  { letter: "Y", word: "Yakult" },{ letter: "Z", word: "Zebra" }
+];
+const mathQuestions = [
+  { question: '7 + 5', answer: 12 },{ question: '9 - 3', answer: 6 },{ question: '4 × 6', answer: 24 },{ question: '20 ÷ 5', answer: 4 },
+  { question: '15 + 9', answer: 24 },{ question: '8 × 7', answer: 56 },{ question: '14 - 6', answer: 8 },{ question: '18 ÷ 3', answer: 6 },
+  { question: '11 + 13', answer: 24 },{ question: '5 × 9', answer: 45 },{ question: '30 ÷ 6', answer: 5 },{ question: '16 - 7', answer: 9 },
+  { question: '9 + 8', answer: 17 },{ question: '12 × 2', answer: 24 },{ question: '25 ÷ 5', answer: 5 }
+];
+
+let alphabetScore = 0, mathScore = 0, alphabetIndex = 0, mathIndex = 0;
+let player = { name: "", emote: "", alphabetScore: 0, mathScore: 0 };
+
+// Utilidades
+function showScreen(id) {
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('gameAlphabet').classList.add('hidden');
+  document.getElementById('gameMath').classList.add('hidden');
+  document.getElementById('scoreboardSection').classList.add('hidden');
+  document.getElementById(id).classList.remove('hidden');
+}
+function updateTurtleMessage(msg) {
+  document.getElementById('turtleMessage').textContent = msg;
+}
+
+// Jogo Alfabetização
+function nextAlphabetQuestion() {
+  alphabetIndex = Math.floor(Math.random() * alphabetWords.length);
+  document.getElementById('alphabetWord').textContent = alphabetWords[alphabetIndex].word;
+  document.getElementById('alphabetFeedback').textContent = '';
+  renderAlphabetLetters();
+  document.getElementById('alphabetScore').textContent = alphabetScore;
+}
+function renderAlphabetLetters() {
+  const area = document.getElementById('alphabetGameArea');
+  area.innerHTML = '';
+  let letters = new Set();
+  letters.add(alphabetWords[alphabetIndex].letter);
+  while (letters.size < 5) letters.add(alphabetWords[Math.floor(Math.random()*alphabetWords.length)].letter);
+  letters = Array.from(letters).sort(() => Math.random() - 0.5);
+  letters.forEach(letter => {
+    const btn = document.createElement('button');
+    btn.className = 'alphabet-letter';
+    btn.textContent = letter;
+    btn.onclick = () => checkAlphabetAnswer(letter);
+    area.appendChild(btn);
+  });
+}
+function checkAlphabetAnswer(letter) {
+  if (letter === alphabetWords[alphabetIndex].letter) {
+    alphabetScore++;
+    document.getElementById('alphabetFeedback').textContent = 'Muito bem! Você acertou!';
+    updateTurtleMessage('Muito bem! Continue assim!');
+  } else {
+    document.getElementById('alphabetFeedback').textContent = 'Ops! Tente novamente.';
+    updateTurtleMessage(`Ops! A resposta correta era "${alphabetWords[alphabetIndex].letter}".`);
+  }
+  document.getElementById('alphabetScore').textContent = alphabetScore;
+  player.alphabetScore = alphabetScore;
+  savePlayer();
+  setTimeout(nextAlphabetQuestion, 900);
+}
+
+// Jogo Matemática
+function nextMathQuestion() {
+  mathIndex = Math.floor(Math.random() * mathQuestions.length);
+  document.getElementById('mathQuestion').textContent = mathQuestions[mathIndex].question;
+  document.getElementById('mathFeedback').textContent = '';
+  document.getElementById('mathAnswer').value = '';
+  document.getElementById('mathScore').textContent = mathScore;
+}
+document.getElementById('checkMath').onclick = () => {
+  const val = parseInt(document.getElementById('mathAnswer').value);
+  if (isNaN(val)) {
+    document.getElementById('mathFeedback').textContent = 'Digite um número!';
+    return;
+  }
+  if (val === mathQuestions[mathIndex].answer) {
+    mathScore++;
+    document.getElementById('mathFeedback').textContent = 'Correto!';
+    updateTurtleMessage('Muito bem! Continue assim!');
+  } else {
+    document.getElementById('mathFeedback').textContent = 'Errado! Tente novamente.';
+    updateTurtleMessage(`Errado! A resposta era "${mathQuestions[mathIndex].answer}".`);
+  }
+  document.getElementById('mathScore').textContent = mathScore;
+  player.mathScore = mathScore;
+  savePlayer();
+  setTimeout(nextMathQuestion, 900);
+};
+
+// Ranking
+function savePlayer() {
+  if (!player.name) return;
+  let scores = JSON.parse(localStorage.getItem('scores') || "[]");
+  let idx = scores.findIndex(s => s.name === player.name && s.emote === player.emote);
+  if (idx >= 0) {
+    scores[idx].alphabetScore = player.alphabetScore;
+    scores[idx].mathScore = player.mathScore;
+  } else {
+    scores.push({ ...player });
+  }
+  localStorage.setItem('scores', JSON.stringify(scores));
+}
+function loadScoreboard() {
+  let scores = JSON.parse(localStorage.getItem('scores') || "[]");
+  scores.sort((a, b) => (b.alphabetScore + b.mathScore) - (a.alphabetScore + a.mathScore));
+  const tbody = document.getElementById('scoreboardBody');
+  tbody.innerHTML = '';
+  scores.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${s.emote}</td><td>${s.name}</td><td>${s.alphabetScore||0}</td><td>${s.mathScore||0}</td><td>${getRank(s)}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('rankMessage').textContent = getRankMessage(scores[0]);
+}
+function getRank(s) {
+  const total = (s.alphabetScore||0) + (s.mathScore||0);
+  if (total <= 3) return 'Iniciante';
+  if (total <= 7) return 'Intermediário';
+  return 'Avançado';
+}
+function getRankMessage(s) {
+  if (!s) return '';
+  const total = (s.alphabetScore||0) + (s.mathScore||0);
+  if (total <= 8) return "Eu fiz esses jogos para você passar vergonha? Nada disso se apresse em subir logo";
+  if (total <= 14) return "Você pode até estar se achando, mas se continuar assim vai ficar pra trás";
+  return "Eu esperava que qualquer um chegasse aqui mas ver você é uma surpresa, meus parabéns";
+}
+
+// Navegação
+document.getElementById('btnAlphabet').onclick = () => {
+  player.name = document.getElementById('playerName').value.trim() || "Anônimo";
+  player.emote = document.getElementById('playerEmote').value.trim() || "🎮";
+  alphabetScore = player.alphabetScore || 0;
+  document.getElementById('alphabetScore').textContent = alphabetScore;
+  showScreen('gameAlphabet');
+  nextAlphabetQuestion();
+};
+document.getElementById('btnMath').onclick = () => {
+  player.name = document.getElementById('playerName').value.trim() || "Anônimo";
+  player.emote = document.getElementById('playerEmote').value.trim() || "🎮";
+  mathScore = player.mathScore || 0;
+  document.getElementById('mathScore').textContent = mathScore;
+  showScreen('gameMath');
+  nextMathQuestion();
+};
+document.getElementById('btnRanking').onclick = () => {
+  loadScoreboard();
+  showScreen('scoreboardSection');
+};
+document.getElementById('backFromAlphabet').onclick = () => { showScreen('menu'); updateTurtleMessage("Escolha um jogo para começar a aprender e se divertir!"); };
+document.getElementById('backFromMath').onclick = () => { showScreen('menu'); updateTurtleMessage("Escolha um jogo para começar a aprender e se divertir!"); };
+document.getElementById('backFromRanking').onclick = () => { showScreen('menu'); updateTurtleMessage("Escolha um jogo para começar a aprender e se divertir!"); };
+
+// Inicialização
+showScreen('menu');
+updateTurtleMessage("Bem-vindo! Escolha um jogo para começar a aprender e se divertir!");
+</script>
+</body>
+</html>

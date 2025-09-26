@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jogos Educativos Interativos</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <h1>🎲 Jogos Educativos Interativos</h1>
+
+  <!-- Menu Principal -->
+  <div id="mainMenu" aria-label="Menu principal de seleção de jogos">
+    <div class="game-card" tabindex="0" role="button" aria-pressed="false" aria-label="Jogar Caça ao Tesouro Numérico" onclick="showGame('mathTreasure')" onkeypress="if(event.key==='Enter') showGame('mathTreasure')">
+      Caça ao Tesouro Numérico
+    </div>
+    <div class="game-card" tabindex="0" role="button" aria-pressed="false" aria-label="Jogar Dominó das Frações" onclick="showGame('fractionDomino')" onkeypress="if(event.key==='Enter') showGame('fractionDomino')">
+      Dominó das Frações
+    </div>
+    <!-- Aqui você pode adicionar mais jogos -->
+  </div>
+
+  <!-- Jogo 1: Caça ao Tesouro Numérico -->
+  <section id="mathTreasure" class="game-container" aria-label="Jogo Caça ao Tesouro Numérico" role="main">
+    <button class="back-btn" aria-label="Voltar ao menu principal" onclick="backToMenu()">← Voltar</button>
+    <div class="game-content">
+      <h2>🏴‍☠️ Caça ao Tesouro Numérico</h2>
+      <p id="mathQuestion" aria-live="polite" style="font-size:1.4rem; margin-top:15px;"></p>
+      <input type="number" id="answer1" aria-label="Resposta para o problema matemático" />
+      <br />
+      <button class="check-btn" onclick="checkMathAnswer()">Verificar</button>
+      <p id="result1" class="result-message" aria-live="assertive"></p>
+      <p class="scoreboard" id="scoreMath">Pontuação: 0</p>
+      <p class="timer" id="timerMath" aria-live="polite">Tempo: 30s</p>
+    </div>
+  </section>
+
+  <!-- Jogo 2: Dominó das Frações -->
+  <section id="fractionDomino" class="game-container" aria-label="Jogo Dominó das Frações" role="main">
+    <button class="back-btn" aria-label="Voltar ao menu principal" onclick="backToMenu()">← Voltar</button>
+    <div class="game-content">
+      <h2>🔢 Dominó das Frações</h2>
+      <p>Selecione duas peças com frações equivalentes para pontuar.</p>
+      <div id="dominoPieces" aria-live="polite" style="margin-top: 20px;">
+        <!-- Peças criadas pelo JS -->
+      </div>
+      <p id="dominoResult" class="result-message" aria-live="assertive"></p>
+      <p class="scoreboard" id="scoreDomino">Pontuação: 0</p>
+      <p class="timer" id="timerDomino" aria-live="polite">Tempo: 45s</p>
+    </div>
+  </section>
+
+  <!-- Overlay de Vitória / Derrota -->
+  <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="overlayTitle" aria-describedby="overlayDesc" tabindex="-1">
+    <div class="overlay-content">
+      <h2 id="overlayTitle"></h2>
+      <p id="overlayDesc"></p>
+      <button onclick="closeOverlay()">Jogar novamente</button>
+    </div>
+  </div>
+
+  <!-- Sons -->
+  <audio id="soundCorrect" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+  <audio id="soundWrong" src="https://actions.google.com/sounds/v1/cartoon/boing.ogg" preload="auto"></audio>
+  <audio id="soundWin" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+
+<script>
+  // Navegação
+  function showGame(gameId) {
+    document.getElementById('mainMenu').style.display = 'none';
+    document.querySelectorAll('.game-container').forEach(game => {
+      game.style.display = 'none';
+    });
+    document.getElementById(gameId).style.display = 'block';
+
+    if(gameId === 'mathTreasure') {
+      startMathGame();
+    } else if(gameId === 'fractionDomino') {
+      startDominoGame();
+    }
+  }
+
+  function backToMenu() {
+    stopTimers();
+    document.querySelectorAll('.game-container').forEach(game => {
+      game.style.display = 'none';
+    });
+    document.getElementById('mainMenu').style.display = 'flex';
+    clearOverlay();
+  }
+
+  // Overlay controle
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayDesc = document.getElementById('overlayDesc');
+
+  function showOverlay(win, message) {
+    overlayTitle.textContent = win ? "🎉 Parabéns! Você venceu!" : "😞 Tempo esgotado!";
+    overlayTitle.className = win ? "" : "defeat";
+    overlayDesc.textContent = message;
+    overlay.classList.add('show');
+    overlay.focus();
+    playSound(win ? 'soundWin' : 'soundWrong');
+  }
+
+  function closeOverlay() {
+    overlay.classList.remove('show');
+    backToMenu();
+  }
+
+  function clearOverlay() {
+    overlay.classList.remove('show');
+  }
+
+  // Sons
+  function playSound(id) {
+    const sound = document.getElementById(id);
+    if(sound) {
+      sound.currentTime = 0;
+      sound.play();
+    }
+  }
+
+  // --- Jogo 1: Caça ao Tesouro Numérico ---
+
+  const mathQuestions = [
+    {q: "Quanto é 15 + 7?", a: 22},
+    {q: "Quanto é 5 × 4?", a: 20},
+    {q: "Quanto é 18 - 9?", a: 9},
+    {q: "Quanto é 12 ÷ 3?", a: 4},
+    {q: "Quanto é 9 + 6?", a: 15}
+  ];
+
+  let currentMathIndex = 0;
+  let scoreMath = 0;
+  let timerMathInterval;
+  let timeLeftMath = 30;
+
+  function startMathGame() {
+    currentMathIndex = 0;
+    scoreMath = 0;
+    timeLeftMath = 30;
+    document.getElementById('scoreMath').textContent = `Pontuação: ${scoreMath}`;
+    document.getElementById('timerMath').textContent = `Tempo: ${timeLeftMath}s`;
+    document.getElementById('answer1').value = '';
+    document.getElementById('result1').textContent = '';
+    showMathQuestion();
+    startMathTimer();
+  }
+
+  function showMathQuestion() {
+    if(currentMathIndex >= mathQuestions.length) {
+      // Vitória
+      stopTimers();
+      showOverlay(true, `Você respondeu todas as perguntas e fez ${scoreMath} pontos!`);
+      return;
+    }
+    document.getElementById('mathQuestion').textContent = mathQuestions[currentMathIndex].q;
+    document.getElementById('answer1').value = '';
+    document.getElementById('result1').textContent = '';
+  }
+
+  function checkMathAnswer() {
+    const input = document.getElementById('answer1');
+    const userAnswer = parseInt(input.value);
+    const correctAnswer = mathQuestions[currentMathIndex].a;
+    const resultEl = document.getElementById('result1');
+
+    if (isNaN(userAnswer)) {
+      resultEl.textContent = "Por favor, digite um número.";
+      resultEl.className = "result-message result-wrong";
+      playSound('soundWrong');
+      return;
+    }
+
+    if(userAnswer === correctAnswer) {
+      scoreMath++;
+      resultEl.textContent = "✔️ Correto!";
+      resultEl.className = "result-message result-correct";
+      playSound('soundCorrect');
+      currentMathIndex++;
+      document.getElementById('scoreMath').textContent = `Pontuação: ${scoreMath}`;
+      setTimeout(showMathQuestion, 1200);
+    } else {
+      resultEl.textContent = "❌ Tente novamente!";
+      resultEl.className = "result-message result-wrong";
+      playSound('soundWrong');
+    }
+  }
+
+  function startMathTimer() {
+    clearInterval(timerMathInterval);
+    timerMathInterval = setInterval(() => {
+      timeLeftMath--;
+      document.getElementById('timerMath').textContent = `Tempo: ${timeLeftMath}s`;
+      if(timeLeftMath <= 0) {
+        clearInterval(timerMathInterval);
+        showOverlay(false, `Você fez ${scoreMath} pontos. Tente novamente!`);
+      }
+    }, 1000);
+  }
+
+  // --- Jogo 2: Dominó das Frações ---
+
+  // Frações e seus equivalentes para o jogo
+  const dominoPairs = [
+    ["1/2", "2/4"],
+    ["3/6", "1/2"],
+    ["2/3", "4/6"],
+    ["1/4", "2/8"],
+    ["3/4", "6/8"],
+    ["1/3", "2/6"]
+  ];
+
+  let dominoScore = 0;
+  let selectedDomino = null;
+  let timerDominoInterval;
+  let timeLeftDomino = 45;
+
+  function startDominoGame() {
+    dominoScore = 0;
+    timeLeftDomino = 45;
+    selectedDomino = null;
+    document.getElementById('scoreDomino').textContent = `Pontuação: ${dominoScore}`;
+    document.getElementById('timerDomino').textContent = `Tempo: ${timeLeftDomino}s`;
+    document.getElementById('dominoResult').textContent = '';
+    generateDominoPieces();
+    startDominoTimer();
+  }
+
+  function generateDominoPieces() {
+    const container = document.getElementById('dominoPieces');
+    container.innerHTML = '';
+
+    // Criar peças embaralhadas
+    let pieces = [];
+    dominoPairs.forEach(pair => {
+      pieces.push(pair[0]);
+      pieces.push(pair[1]);
+    });
+
+    // Embaralhar (Fisher-Yates)
+    for(let i = pieces.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
+    }
+
+    pieces.forEach((fraction, index) => {
+      const div = document.createElement('div');
+      div.classList.add('domino-piece');
+      div.textContent = fraction;
+      div.setAttribute('tabindex', '0');
+      div.setAttribute('role', 'button');
+      div.setAttribute('aria-pressed', 'false');
+      div.setAttribute('aria-label', `Peça de dominó com fração ${fraction}`);
+      div.addEventListener('click', () => selectDomino(div));
+      div.addEventListener('keypress', e => {
+        if(e.key === 'Enter') selectDomino(div);
+      });
+      container.appendChild(div);
+    });
+  }
+
+  function selectDomino(piece) {
+    if(piece.classList.contains('selected')) {
+      piece.classList.remove('selected');
+      selectedDomino = null;
+      return;
+    }
+    if(selectedDomino === null) {
+      piece.classList.add('selected');
+      selectedDomino = piece;
+    } else {
+      piece.classList.add('selected');
+      // Verificar equivalência
+      if(areFractionsEquivalent(selectedDomino.textContent, piece.textContent)) {
+        document.getElementById('dominoResult').textContent = "✔️ Combinação correta!";
+        document.getElementById('dominoResult').className = "result-message result-correct";
+        playSound('soundCorrect');
+        dominoScore++;
+        document.getElementById('scoreDomino').textContent = `Pontuação: ${dominoScore}`;
+
+        // Remover peças selecionadas após um tempo
+        setTimeout(() => {
+          selectedDomino.style.visibility = 'hidden';
+          piece.style.visibility = 'hidden';
+          selectedDomino = null;
+
+          // Vitória se remover todas as peças
+          if(document.querySelectorAll('.domino-piece:not([style*="visibility: hidden"])').length <= 1) {
+            stopTimers();
+            showOverlay(true, `Você combinou todas as frações! Pontuação: ${dominoScore}`);
+          }
+        }, 800);
+      } else {
+        document.getElementById('dominoResult').textContent = "❌ Combinação incorreta!";
+        document.getElementById('dominoResult').className = "result-message result-wrong";
+        playSound('soundWrong');
+        // Desmarcar após animação
+        setTimeout(() => {
+          selectedDomino.classList.remove('selected');
+          piece.classList.remove('selected');
+          selectedDomino = null;
+          document.getElementById('dominoResult').textContent = '';
+        }, 1000);
+      }
+    }
+  }
+
+  // Função para verificar equivalência simples entre frações (string)
+  function areFractionsEquivalent(f1, f2) {
+    // Parse frações
+    const [num1, den1] = f1.split('/').map(Number);
+    const [num2, den2] = f2.split('/').map(Number);
+    if(!num1 || !den1 || !num2 || !den2) return false;
+
+    // Simplificar e comparar multiplicações cruzadas
+    return num1 * den2 === num2 * den1;
+  }
+
+  function startDominoTimer() {
+    clearInterval(timerDominoInterval);
+    timerDominoInterval = setInterval(() => {
+      timeLeftDomino--;
+      document.getElementById('timerDomino').textContent = `Tempo: ${timeLeftDomino}s`;
+      if(timeLeftDomino <= 0) {
+        clearInterval(timerDominoInterval);
+        showOverlay(false, `Tempo esgotado! Você fez ${dominoScore} pontos.`);
+      }
+    }, 1000);
+  }
+
+  // Para parar timers ao voltar para menu
+  function stopTimers() {
+    clearInterval(timerMathInterval);
+    clearInterval(timerDominoInterval);
+  }
+
+  // Acessibilidade: fechar overlay com ESC
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape' && overlay.classList.contains('show')) {
+      closeOverlay();
+    }
+  });
+</script>
+
+</body>
+</html>
